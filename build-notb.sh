@@ -33,31 +33,9 @@ RELEASE_VERSION="2.1"
 DEVICE="Tissot"
 KERNELTYPE="OC-NonTreble"
 KERNEL_SUPPORT="10 - 13"
-KERNELNAME="${KERNEL}-${RELEASE_VERSION}-${DEVICE}-${KERNELTYPE}-$(TZ=Asia/Jakarta date +%y%m%d-%H%M)"
+KERNELNAME="${KERNEL}-${DEVICE}-${KERNELTYPE}"
 TEMPZIPNAME="${KERNELNAME}.zip"
 ZIPNAME="${KERNELNAME}.zip"
-
-# Telegram
-CHATIDQ="-1001308839345"
-CHATID="-1001308839345" # Group/channel chatid (use rose/userbot to get it)
-TELEGRAM_TOKEN="5988732593:AAEn7SJOoh5x8VWtevuPGO25-TRnygaLsoM" # Get from botfather
-
-# Export Telegram.sh
-TELEGRAM_FOLDER="${HOME}"/telegram
-if ! [ -d "${TELEGRAM_FOLDER}" ]; then
-    git clone https://github.com/Anothermi1/telegram.sh/ "${TELEGRAM_FOLDER}"
-fi
-
-TELEGRAM="${TELEGRAM_FOLDER}"/telegram
-
-tg_cast() {
-    "${TELEGRAM}" -t "${TELEGRAM_TOKEN}" -c "${CHATID}" -H \
-    "$(
-        for POST in "${@}"; do
-            echo "${POST}"
-        done
-    )"
-}
 
 # Regenerating Defconfig
 regenerate() {
@@ -87,7 +65,6 @@ makekernel() {
         END=$(TZ=Asia/Jakarta date +"%s")
         DIFF=$(( END - START ))
         echo -e "Kernel compilation failed, See buildlog to fix errors"
-        tg_cast "Build for ${DEVICE} <b>failed</b> in $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)! Check Instance for errors @zh4ntech"
         exit 1
     fi
 }
@@ -116,32 +93,29 @@ packingkernel() {
     # Sign the zip before sending it to Telegram
    # curl -sLo zipsigner-3.0.jar https://raw.githubusercontent.com/baalajimaestro/AnyKernel2/master/zipsigner-3.0.jar
    # java -jar zipsigner-3.0.jar "${TEMPZIPNAME}" "${ZIPNAME}"
-
-    # Ship it to the CI channel
-    "${TELEGRAM}" -f "$ZIPNAME" -t "${TELEGRAM_TOKEN}" -c "${CHATIDQ}" 
 }
 
 # Starting
-tg_cast "<b>STARTING KERNEL BUILD</b>" \
-    "Device: ${DEVICE}" \
-    "Kernel Name: <code>${KERNEL}</code>" \
-    "Build Type: <code>${KERNELTYPE}</code>" \
-    "Release Version: ${RELEASE_VERSION}" \
-    "Linux Version: <code>$(make kernelversion)</code>" \
-    "Android Supported: ${KERNEL_SUPPORT}"
+echo "<b>STARTING KERNEL BUILD</b>"
+echo "Device: ${DEVICE}"
+echo "Kernel Name: ${KERNEL}"
+echo "Build Type: ${KERNELTYPE}"
+echo "Release Version: ${RELEASE_VERSION}"
+echo "Linux Version: $(make kernelversion)"
+echo "Android Supported: ${KERNEL_SUPPORT}"
 START=$(TZ=Asia/Jakarta date +"%s")
 makekernel
 packingkernel
 END=$(TZ=Asia/Jakarta date +"%s")
 DIFF=$(( END - START ))
-tg_cast "Build for ${DEVICE} with ${COMPILER_STRING} <b>succeed</b> took $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)! by @zh4ntech"
+echo "Build for ${DEVICE} with ${COMPILER_STRING} succeed took $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)!"
 
-tg_cast  "<b>Changelog :</b>" \
-    "- Compile with Proton Clang 15.0.0" \
-    "- Bump 2.1" \
-    "- Update KernelSU" \
-    "- More Changelogs : https://github.com/zhantech/android_kernel_msm8953/commits/Pringgodani-OC"
+echo "<b>Changelog :</b>"
+echo "- Compile with Proton Clang 15.0.0"
+echo "- Bump 2.1"
+echo "- Upstremed Kernel to 4.9.337"
+echo "- More Changelogs : https://github.com/zhantech/android_kernel_msm8953/commits/Pringgodani-OC"
 
-    echo "........................"
-    echo ".    Build Finished    ."
-    echo "........................"
+echo "........................"
+echo ".    Build Finished    ."
+echo "........................"
