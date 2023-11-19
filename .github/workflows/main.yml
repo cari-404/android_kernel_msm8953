@@ -1,0 +1,147 @@
+name: build kernel
+
+on:
+  push:
+    branches:
+      - Pringgodani
+      - Pringgodani-OC
+      - Pringgodani-Treble
+      - Pringgodani-Treble-OC
+
+env:
+  KSU_VERSION: "0.7.1"
+  PRI_VERSION: "2.1"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    strategy:
+      matrix:
+        branch:
+          - Pringgodani
+          - Pringgodani-OC
+          - Pringgodani-Treble
+          - Pringgodani-Treble-OC
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ matrix.branch }}
+
+    - name: check directory 1
+      run: 
+        ls
+
+    - name: Set execute permission for build scripts
+      run: |
+        rm -r KernelSU
+        curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v${{ env.KSU_VERSION }}
+
+    - name: Build kernel
+      run: |
+        if [[ "${{ matrix.branch }}" == "Pringgodani-Treble" || "${{ matrix.branch }}" == "Pringgodani-Treble-OC" ]]; then
+          chmod +x build-tb.sh
+        else
+          chmod +x build-notb.sh
+        fi
+
+        if [[ "${{ matrix.branch }}" == "Pringgodani-Treble" || "${{ matrix.branch }}" == "Pringgodani-Treble-OC" ]]; then
+          ./build-tb.sh
+        else
+          ./build-notb.sh
+        fi
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.branch }}-Tissot-KSU_v${{ env.KSU_VERSION }}
+        path: |
+          ~/Build/kernel/anykernel/*.zip
+
+  upload_to_release:
+    name: Upload to Release
+    needs: [build]  # Menunggu kedua pekerjaan selesai
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+    - name: Download Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: Pringgodani-Tissot-KSU_v${{ env.KSU_VERSION }}
+        path: Pringgodani-Tissot-KSU_v${{ env.KSU_VERSION }}
+
+    - name: Download Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: Pringgodani-OC-Tissot-KSU_v${{ env.KSU_VERSION }}
+        path: Pringgodani-OC-Tissot-KSU_v${{ env.KSU_VERSION }}
+
+    - name: Download Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: Pringgodani-Treble-Tissot-KSU_v${{ env.KSU_VERSION }}
+        path: Pringgodani-Treble-Tissot-KSU_v${{ env.KSU_VERSION }}
+
+    - name: Download Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: Pringgodani-Treble-OC-Tissot-KSU_v${{ env.KSU_VERSION }}
+        path: Pringgodani-Treble-OC-Tissot-KSU_v${{ env.KSU_VERSION }}
+
+    - name: Display structure of downloaded files
+      run: ls -R
+
+    - name: Create GitHub Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ env.PRI_VERSION }}_KSU_v${{ env.KSU_VERSION }}
+        release_name: version ${{ env.PRI_VERSION }} KSU v${{ env.KSU_VERSION }}
+
+    - name: Upload Release Artifact Pringgodani
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./Pringgodani-Tissot-KSU_v${{ env.KSU_VERSION }}/Pringgodani-Tissot-NonOC-NonTreble.zip
+        asset_name: Pringgodani-Tissot-NonOC-NonTreble-KSU_v${{ env.KSU_VERSION }}.zip
+        asset_content_type: application/zip
+
+    - name: Upload Release Artifact Pringgodani-OC
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./Pringgodani-OC-Tissot-KSU_v${{ env.KSU_VERSION }}/Pringgodani-Tissot-OC-NonTreble.zip
+        asset_name: Pringgodani-Tissot-OC-NonTreble-KSU_v${{ env.KSU_VERSION }}.zip
+        asset_content_type: application/zip
+
+    - name: Upload Release Artifact Pringgodani-Treble
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./Pringgodani-Treble-Tissot-KSU_v${{ env.KSU_VERSION }}/Pringgodani-Tissot-NonOC-Treble.zip
+        asset_name: Pringgodani-Tissot-NonOC-Treble-KSU_v${{ env.KSU_VERSION }}.zip
+        asset_content_type: application/zip
+
+    - name: Upload Release Artifact Pringgodani-Treble-OC
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./Pringgodani-Treble-OC-Tissot-KSU_v${{ env.KSU_VERSION }}/Pringgodani-Tissot-OC-Treble.zip
+        asset_name: Pringgodani-Tissot-OC-Treble-KSU_v${{ env.KSU_VERSION }}.zip
+        asset_content_type: application/zip
