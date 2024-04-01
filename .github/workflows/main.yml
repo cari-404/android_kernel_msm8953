@@ -9,7 +9,7 @@ on:
       - Pringgodani-Treble-OC
 
 env:
-  KSU_VERSION: "0.7.1"
+  KSU_VERSION: "0.9.2"
   PRI_VERSION: "2.1"
 
 jobs:
